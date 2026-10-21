@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>车牌识别控制台</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --panel: rgba(17, 24, 39, .78);
+      --panel-strong: rgba(18, 28, 45, .94);
+      --line: rgba(148, 163, 184, .22);
+      --text: #eef4ff;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-2: #22c55e;
+      --warn: #fb923c;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .42);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(56, 189, 248, .24), transparent 32%),
+        radial-gradient(circle at 86% 18%, rgba(34, 197, 94, .18), transparent 30%),
+        linear-gradient(135deg, #080b10 0%, #101827 55%, #061016 100%);
+      color: var(--text);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, .07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, .07) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.85), transparent 78%);
+    }
+    header {
+      position: relative;
+      width: min(1360px, calc(100vw - 32px));
+      margin: 24px auto 0;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, .88), rgba(8, 13, 22, .72));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: 30px; line-height: 1.15; }
+    .subtitle { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+    .status {
+      border: 1px solid rgba(56, 189, 248, .35);
+      background: rgba(56, 189, 248, .1);
+      color: #dff7ff;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    main {
+      position: relative;
+      width: min(1360px, calc(100vw - 32px));
+      margin: 18px auto 28px;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 18px;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    h2 { margin: 0 0 12px; font-size: 16px; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(30, 41, 59, .8), rgba(15, 23, 42, .62));
+    }
+    .metric span { display: block; color: var(--muted); font-size: 12px; }
+    .metric strong { display: block; margin-top: 8px; font-size: 26px; }
+    .controls { display: grid; gap: 14px; }
+    label { display: grid; gap: 7px; color: var(--muted); font-size: 13px; }
+    select, input[type="file"], input[type="number"] {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(2, 6, 23, .66);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, var(--primary), #2563eb);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 14px 34px rgba(37, 99, 235, .28);
+    }
+    button.secondary {
+      background: linear-gradient(135deg, var(--primary-2), #15803d);
+      box-shadow: 0 14px 34px rgba(21, 128, 61, .24);
+    }
+    button:disabled { opacity: .55; cursor: wait; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .stage {
+      min-height: 342px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #050914;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .stage img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .empty { color: var(--muted); padding: 28px; text-align: center; }
+    .cards {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--panel-strong);
+      display: grid;
+      gap: 7px;
+    }
+    .plate {
+      font-size: 28px;
+      font-weight: 900;
+      color: #86efac;
+      text-shadow: 0 0 24px rgba(34, 197, 94, .32);
+    }
+    .error { color: var(--warn); }
+    .meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+    .file-warning {
+      display: none;
+      margin-bottom: 12px;
+      border: 1px solid rgba(251, 146, 60, .38);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: rgba(251, 146, 60, .12);
+      color: #fed7aa;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    @media (max-width: 1040px) {
+      header, main { grid-template-columns: 1fr; }
+      .metrics, .workspace { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .metrics, .workspace { grid-template-columns: 1fr; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">License Plate Recognition Console</p>
+      <h1>YOLO 26 + CRNN 车牌识别</h1>
+      <p class="subtitle">预置 CCPD2019 样例，也支持上传图片；检测、识别和可视化结果一屏完成。</p>
+    </div>
+    <div class="status" id="status">模型加载中...</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="file-warning" id="fileWarning">
+        当前是 file 方式打开，只能看界面。请打开 http://127.0.0.1:7860 使用模型识别。
+      </div>
+      <h2>输入图片</h2>
+      <div class="controls">
+        <label>预置 CCPD 图片
+          <select id="preset"></select>
+        </label>
+        <button id="usePreset">使用预置图片识别</button>
+
+        <label>自定义上传
+          <input id="upload" type="file" accept="image/*" />
+        </label>
+        <button class="secondary" id="useUpload">上传图片识别</button>
+
+        <label>检测置信度
+          <input id="conf" type="number" min="0.01" max="0.99" step="0.01" value="0.25" />
+        </label>
+
+        <div class="hint">上传图片会暂存在项目 runs 目录。识别不准时，可以先降低置信度，或增加 CRNN 训练轮数和样本量。</div>
+        <div class="hint" id="modelPath">识别模型：读取中...</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="metrics">
+        <div class="metric"><span>YOLO mAP50</span><strong id="map50">--</strong></div>
+        <div class="metric"><span>YOLO mAP50-95</span><strong id="map95">--</strong></div>
+        <div class="metric"><span>检测召回率</span><strong id="recall">--</strong></div>
+        <div class="metric"><span>CRNN 整牌准确率</span><strong id="crnnAcc">--</strong></div>
+      </div>
+
+      <div class="workspace">
+        <div>
+          <h2>原图</h2>
+          <div class="stage" id="preview"><div class="empty">请选择或上传一张图片</div></div>
+        </div>
+        <div>
+          <h2>输出结果图</h2>
+          <div class="stage" id="resultImage"><div class="empty">识别后显示画框结果</div></div>
+        </div>
+      </div>
+      <div class="cards" id="results"></div>
+    </section>
+  </main>
+
+  <script>
+    const state = { presets: [], uploadData: null, uploadName: null };
+    const $ = (id) => document.getElementById(id);
+    const percent = (v) => v === null || v === undefined ? "--" : `${(Number(v) * 100).toFixed(1)}%`;
+
+    if (location.protocol === "file:") {
+      $("fileWarning").style.display = "block";
+      $("status").textContent = "请用本地服务打开";
+    }
+
+    function setBusy(isBusy, text) {
+      $("status").textContent = text;
+      $("usePreset").disabled = isBusy;
+      $("useUpload").disabled = isBusy;
+    }
+
+    function showPreview(src) {
+      $("preview").innerHTML = `<img alt="原图" src="${src}">`;
+    }
+
+    function showResults(data) {
+      $("resultImage").innerHTML = `<img alt="识别结果" src="${data.result_image}">`;
+      if (!data.predictions.length) {
+        $("results").innerHTML = '<div class="card"><div class="plate error">未检测到车牌</div><div class="meta">可以降低置信度后再试。</div></div>';
+        return;
+      }
+      $("results").innerHTML = data.predictions.map((item, idx) => `
+        <div class="card">
+          <div class="meta">车牌 ${idx + 1}</div>
+          <div class="plate">${item.text || "未识别"}</div>
+          ${item.truth ? `<div class="meta">真实车牌：${item.truth}</div>` : ""}
+          <div class="meta">检测置信度：${item.score.toFixed(3)}</div>
+          ${item.ocr_score === undefined ? "" : `<div class="meta">识别置信度：${item.ocr_score.toFixed(3)}</div>`}
+          <div class="meta">位置：${item.box.join(", ")}</div>
+        </div>
+      `).join("");
+    }
+
+    async function predict(payload) {
+      setBusy(true, "识别中...");
+      $("results").innerHTML = "";
+      try {
+        const res = await fetch("/api/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, conf: Number($("conf").value || 0.25) })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "识别失败");
+        showResults(data);
+        setBusy(false, `完成：检测到 ${data.predictions.length} 个车牌`);
+      } catch (err) {
+        setBusy(false, "出错");
+        $("results").innerHTML = `<div class="card"><div class="plate error">识别失败</div><div class="meta">${err.message}</div></div>`;
+      }
+    }
+
+    async function loadMetrics() {
+      if (location.protocol === "file:") return;
+      const res = await fetch("/api/metrics");
+      const data = await res.json();
+      $("map50").textContent = percent(data.detector_map50);
+      $("map95").textContent = percent(data.detector_map50_95);
+      $("recall").textContent = percent(data.detector_recall);
+      $("crnnAcc").textContent = percent(data.recognizer_exact_acc);
+      $("modelPath").textContent = `识别模型：${data.recognizer_path || "未知"}`;
+    }
+
+    async function loadPresets() {
+      if (location.protocol === "file:") return;
+      const res = await fetch("/api/presets");
+      const data = await res.json();
+      state.presets = data.presets;
+      $("preset").innerHTML = state.presets.map((p, i) => `<option value="${i}">${p.name} ${p.label ? " - " + p.label : ""}</option>`).join("");
+      if (state.presets.length) {
+        showPreview(state.presets[0].image_url);
+        setBusy(false, "模型已就绪");
+      } else {
+        setBusy(false, "未找到预置图片");
+      }
+    }
+
+    $("preset").addEventListener("change", () => {
+      const preset = state.presets[Number($("preset").value)];
+      if (preset) showPreview(preset.image_url);
+    });
+
+    $("upload").addEventListener("change", () => {
+      const file = $("upload").files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.uploadData = reader.result;
+        state.uploadName = file.name;
+        showPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    $("usePreset").addEventListener("click", () => {
+      const preset = state.presets[Number($("preset").value)];
+      if (preset) predict({ preset_id: preset.id });
+    });
+
+    $("useUpload").addEventListener("click", () => {
+      if (!state.uploadData) {
+        $("results").innerHTML = '<div class="card"><div class="plate error">请先选择图片</div></div>';
+        return;
+      }
+      predict({ upload_name: state.uploadName, image_data: state.uploadData });
+    });
+
+    loadMetrics();
+    loadPresets();
+  </script>
+</body>
+</html>

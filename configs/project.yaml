@@ -1,0 +1,8 @@
+# The included detector checkpoint was trained from yolo11n.pt. This
+# configuration requests YOLO 26 for a new training run when available.
+detector_model: yolo26.pt
+fallback_detector_model: yolo11n.pt
+
+plate_img_height: 32
+plate_img_width: 160
+max_plate_length: 8

@@ -1,0 +1,16 @@
+data/
+runs/**
+!runs/yolo_plate/
+!runs/yolo_plate/weights/
+!runs/yolo_plate/weights/best.pt
+!runs/yolo_plate/results.csv
+!runs/crnn_plate_balanced/
+!runs/crnn_plate_balanced/best.pt
+*.pt
+!runs/yolo_plate/weights/best.pt
+!runs/crnn_plate_balanced/best.pt
+__pycache__/
+*.pyc
+work/
+work_detection_report_render/
+*.docx
