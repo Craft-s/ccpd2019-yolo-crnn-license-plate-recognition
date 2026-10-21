@@ -52,3 +52,10 @@ CRNN 数据使用 CCPD 文件名里的四点坐标矫正为 160×32 裁剪图。
 检测模型最后一轮的验证指标来自 `runs/yolo_plate/results.csv`：Precision 100.0%、Recall 99.984%、mAP50 99.5%、mAP50-95 77.718%。均衡 CRNN 权重保存的验证集整牌准确率约为 93.98%。这些是各自验证集指标，不代表任意上传图片的端到端准确率。
 
 两份最佳权重随源码一起提交。数据集、训练缓存和用户上传图片由 `.gitignore` 排除。
+
+## 开源许可与来源
+
+本仓库代码和自训练模型以 [AGPL-3.0](LICENSE) 开源。项目使用的 [Ultralytics YOLO](https://github.com/ultralytics/ultralytics) 采用 AGPL-3.0 许可；随仓检测权重由其 YOLO11 模型训练得到，使用和再分发时请遵守上游许可。
+
+训练数据来自 [CCPD](https://github.com/detectRecog/CCPD)，其仓库采用 [MIT 许可](https://github.com/detectRecog/CCPD/blob/master/LICENSE)。本仓库不包含 CCPD 原始图片；使用数据时请查看上游说明并按其要求引用论文。
+
